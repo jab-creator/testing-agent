@@ -20,4 +20,4 @@ qa = "cli.qa:main"
 
 [tool.setuptools]
 # Include top-level packages and subpackages (e.g. adapters.shared).
-packages = {find = {include = ["agent_core*", "adapters*", "runners*", "cli*"]}}
+packages = {find = {include = ["agent_core*", "adapters*", "runners*", "cli*", "tests*"]}}
