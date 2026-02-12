@@ -1,0 +1,61 @@
+name: Testing Agent (smoke)
+
+on:
+  pull_request:
+  push:
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout (for metadata only)
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install testing-agent CLI
+        run: |
+          python -m pip install --upgrade pip
+          # Phase 1: install latest published/testing-agent main branch CLI.
+          pip install "git+https://github.com/jab-creator/testing-agent@main"
+          python -m pip show testing-agent
+
+      - name: Install browser driver
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y chromium-chromedriver || sudo apt-get install -y chromium-driver
+          command -v chromedriver || true
+
+      - name: Run smoke via qa
+        env:
+          # PR context (empty on push)
+          PR_REPO: ${{ github.event.pull_request.head.repo.clone_url }}
+          PR_SHA:  ${{ github.event.pull_request.head.sha }}
+          # Push context
+          PUSH_REPO: ${{ github.server_url }}/${{ github.repository }}
+          PUSH_SHA:  ${{ github.sha }}
+        run: |
+          set -euo pipefail
+
+          REPO="${PR_REPO:-$PUSH_REPO}"
+          SHA="${PR_SHA:-$PUSH_SHA}"
+
+          if [ -z "$REPO" ] || [ -z "$SHA" ]; then
+            echo "Missing repo/sha context"
+            exit 2
+          fi
+
+          echo "Repo: $REPO"
+          echo "SHA:  $SHA"
+
+          # Pin smoke run to exact commit for deterministic PR/push validation.
+          qa --repo "$REPO" --ref "$SHA"
