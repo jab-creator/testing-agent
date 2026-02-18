@@ -11,4 +11,6 @@ Core keys:
 - test.target_folder (where tests live in THIS repo under /tests)
 - test.strategy (selenium, flutter, api)
 - test.base_url_env
+- test.endpoints (optional list of URL paths to smoke test)
+- test.default_suite (optional: smoke, regression/core, all)
 - env (env vars to set for the runner)

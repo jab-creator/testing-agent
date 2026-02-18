@@ -19,6 +19,5 @@ dependencies = [
 qa = "cli.qa:main"
 
 [tool.setuptools]
-# Explicitly list packages we want in the distribution
-packages = ["agent_core", "adapters", "runners", "cli"]
-
+# Include top-level packages and subpackages (e.g. adapters.shared).
+packages = {find = {include = ["agent_core*", "adapters*", "runners*", "cli*", "tests*"]}}

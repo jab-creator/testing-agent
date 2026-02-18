@@ -1,0 +1,25 @@
+{
+  "trips": [
+    {
+      "id": "trip-pre-window",
+      "departureDate": "2019-01-10",
+      "returnDate": "2019-01-25",
+      "destination": "Mexico",
+      "reason": "vacation"
+    },
+    {
+      "id": "trip-in-window",
+      "departureDate": "2024-02-05",
+      "returnDate": "2024-02-20",
+      "destination": "United States",
+      "reason": "business"
+    }
+  ],
+  "settings": {
+    "prDate": "2020-03-01",
+    "targetDate": "",
+    "residencyStatus": "permanent",
+    "residencyPeriods": []
+  }
+}
+

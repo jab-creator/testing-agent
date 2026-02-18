@@ -11,6 +11,10 @@ test:
   target_folder: "citizenship_tracker"
   strategy: "selenium"
   base_url_env: "APP_BASE_URL"
+  default_suite: "smoke"
+  endpoints:
+    - "/"
+    - "/index.html"
 
 selectors:
   strategy: "text"

@@ -2,8 +2,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 import os
-import pytest
-import socket
+import subprocess
+import sys
 
 from runners.process_runner import ProcessRunner, ProcessHandle
 from agent_core.utils.http_wait import wait_for_url
@@ -20,30 +20,51 @@ class SeleniumRunner:
         self.proc: ProcessHandle | None = None
 
     def start_app(self):
-        cmd = self.config["run"]["command"]
-        wait_for = self.config["run"]["wait_for"]
-        timeout = int(self.config["run"].get("timeout", 20))
-        # Preflight: if port is in use, it's almost always a leaked server.
-        # Fail fast so we don't accidentally test against the wrong instance.
-        host, port = "127.0.0.1", 8000
-        s = socket.socket()
-        try:
-            s.bind((host, port))
-        finally:
-            s.close()
+        run_cfg = self.config["run"]
+        cmd = run_cfg["command"]
+        wait_for = run_cfg["wait_for"]
+        timeout = int(run_cfg.get("timeout", 20))
 
         self.proc = ProcessRunner.start(cmd, cwd=str(self.repo_path))
         wait_for_url(wait_for, timeout_s=timeout)
 
-    def run_tests(self) -> SeleniumRunResult:
-        env = self.config.get("env", {})
-        for k, v in env.items():
-            os.environ[str(k)] = str(v)
+    def run_tests(self, suite: str = "smoke") -> SeleniumRunResult:
+        env_overrides = self.config.get("env", {}) or {}
+        merged_env = os.environ.copy()
+        for k, v in env_overrides.items():
+            merged_env[str(k)] = str(v)
 
-        target_folder = self.config["test"]["target_folder"]
+        test_cfg = self.config["test"]
+        base_url_env = test_cfg.get("base_url_env")
+        base_url_env = base_url_env or "APP_BASE_URL"
+        merged_env["QA_BASE_URL_ENV"] = base_url_env
+        if base_url_env not in merged_env:
+            merged_env[base_url_env] = self.config["run"]["wait_for"]
+
+        smoke_endpoints = test_cfg.get("endpoints")
+        if isinstance(smoke_endpoints, list):
+            clean = [str(x).strip() for x in smoke_endpoints if str(x).strip()]
+            if clean:
+                merged_env["QA_SMOKE_ENDPOINTS"] = ",".join(clean)
+
+        target_folder = test_cfg["target_folder"]
         test_path = self.agent_repo_root / "tests" / target_folder
-        exit_code = pytest.main([str(test_path), "-q"])
-        return SeleniumRunResult(pytest_exit_code=int(exit_code))
+        default_suite = str(test_cfg.get("default_suite", "smoke")).strip().lower() or "smoke"
+        selected_suite = suite or default_suite
+        if selected_suite == "core":
+            selected_suite = "regression"
+
+        cmd = [sys.executable, "-m", "pytest", str(test_path), "-q", "--maxfail=1"]
+        if selected_suite != "all":
+            cmd.extend(["-m", selected_suite])
+
+        proc = subprocess.run(
+            cmd,
+            cwd=str(self.agent_repo_root),
+            env=merged_env,
+            check=False,
+        )
+        return SeleniumRunResult(pytest_exit_code=int(proc.returncode))
 
     def stop_app(self):
         if self.proc:
