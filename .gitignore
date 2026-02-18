@@ -12,3 +12,10 @@ build/
 .DS_Store
 tmp/
 workspace/
+# Local work area (cloned repos, enroll clones, temp files)
+workspace/
+*.log
+
+# OS / editor
+.DS_Store
+.vscode/
