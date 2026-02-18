@@ -32,6 +32,13 @@ jobs:
           pip install "git+https://github.com/jab-creator/testing-agent@main"
           python -m pip show testing-agent
 
+      - name: Install browser driver
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y chromium-chromedriver || sudo apt-get install -y chromium-driver
+          command -v chromedriver || true
+
       - name: Run qa suite via qa
         env:
           # PR context (empty on push)
