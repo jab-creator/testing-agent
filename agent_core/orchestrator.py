@@ -19,7 +19,7 @@ class Orchestrator:
         # Resolve against installed package/source tree, not process CWD.
         self.agent_repo_root = Path(__file__).resolve().parents[1]
 
-    def run(self) -> OrchestratorResult:
+    def run(self, suite: str = "smoke") -> OrchestratorResult:
         repo_path = RepoManager.clone(self.repo_url, self.ref, self.workspace_dir)
         try:
             cfg = load_config(repo_path)
@@ -29,7 +29,7 @@ class Orchestrator:
             runner = adapter.make_runner(cfg, str(repo_path), agent_repo_root=str(self.agent_repo_root))
             try:
                 runner.start_app()
-                result = runner.run_tests()
+                result = runner.run_tests(suite=suite)
             finally:
                 runner.stop_app()
 

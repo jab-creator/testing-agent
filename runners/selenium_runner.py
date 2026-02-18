@@ -28,7 +28,7 @@ class SeleniumRunner:
         self.proc = ProcessRunner.start(cmd, cwd=str(self.repo_path))
         wait_for_url(wait_for, timeout_s=timeout)
 
-    def run_tests(self) -> SeleniumRunResult:
+    def run_tests(self, suite: str = "smoke") -> SeleniumRunResult:
         env_overrides = self.config.get("env", {}) or {}
         merged_env = os.environ.copy()
         for k, v in env_overrides.items():
@@ -49,8 +49,17 @@ class SeleniumRunner:
 
         target_folder = test_cfg["target_folder"]
         test_path = self.agent_repo_root / "tests" / target_folder
+        default_suite = str(test_cfg.get("default_suite", "smoke")).strip().lower() or "smoke"
+        selected_suite = suite or default_suite
+        if selected_suite == "core":
+            selected_suite = "regression"
+
+        cmd = [sys.executable, "-m", "pytest", str(test_path), "-q", "--maxfail=1"]
+        if selected_suite != "all":
+            cmd.extend(["-m", selected_suite])
+
         proc = subprocess.run(
-            [sys.executable, "-m", "pytest", str(test_path), "-q", "--maxfail=1"],
+            cmd,
             cwd=str(self.agent_repo_root),
             env=merged_env,
             check=False,

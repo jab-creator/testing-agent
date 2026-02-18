@@ -56,3 +56,9 @@ def _validate_required(cfg: dict) -> None:
         for i, endpoint in enumerate(endpoints):
             if not isinstance(endpoint, str) or not endpoint.strip():
                 raise ConfigError(f"test.endpoints[{i}] must be a non-empty string")
+
+    default_suite = cfg.get("test", {}).get("default_suite")
+    if default_suite is not None:
+        valid_suites = {"smoke", "regression", "core", "all"}
+        if not isinstance(default_suite, str) or default_suite.strip().lower() not in valid_suites:
+            raise ConfigError("test.default_suite must be one of: smoke, regression, core, all")
