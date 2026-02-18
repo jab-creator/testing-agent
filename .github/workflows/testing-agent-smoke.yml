@@ -1,4 +1,4 @@
-name: Testing Agent (smoke)
+name: Testing Agent
 
 on:
   pull_request:
@@ -8,9 +8,13 @@ permissions:
   contents: read
 
 jobs:
-  smoke:
+  qa:
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        suite: [smoke, regression]
 
     steps:
       - name: Checkout (for metadata only)
@@ -28,14 +32,7 @@ jobs:
           pip install "git+https://github.com/jab-creator/testing-agent@main"
           python -m pip show testing-agent
 
-      - name: Install browser driver
-        run: |
-          set -euo pipefail
-          sudo apt-get update
-          sudo apt-get install -y chromium-chromedriver || sudo apt-get install -y chromium-driver
-          command -v chromedriver || true
-
-      - name: Run smoke via qa
+      - name: Run qa suite via qa
         env:
           # PR context (empty on push)
           PR_REPO: ${{ github.event.pull_request.head.repo.clone_url }}
@@ -56,6 +53,7 @@ jobs:
 
           echo "Repo: $REPO"
           echo "SHA:  $SHA"
+          echo "Suite: ${{ matrix.suite }}"
 
-          # Pin smoke run to exact commit for deterministic PR/push validation.
-          qa --repo "$REPO" --ref "$SHA"
+          # Pin run to exact commit for deterministic PR/push validation.
+          qa --repo "$REPO" --ref "$SHA" --suite "${{ matrix.suite }}"
